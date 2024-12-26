@@ -23,7 +23,7 @@ services:
       ## Container repositories dir where repos will be cloned
       - git-mirror_repos:/data/repositories
       ## Path to logs directory in container
-      - ./containers/logs:/project/logs
+      - ./containers/logs:/data/logs
     ## Drop into a Bash prompt for debugging
     # command: sleep infinity
     ## Run the project with uv

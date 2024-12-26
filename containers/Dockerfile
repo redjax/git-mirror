@@ -18,7 +18,12 @@ RUN apt-get update -y \
     && rm -rf /var/lib/apt/lists/*
 
 ## Create container /data directory
-RUN mkdir -pv /data
+RUN mkdir -pv /data/logs && \
+    mkdir -pv /data/repositories
+
+## Seed app log files
+RUN touch /data/logs/app.log \
+    && touch /data/logs/error.log
 
 ## Create a non-root user 'gituser' and add to sudo group
 RUN useradd -ms /bin/bash gituser \
@@ -27,9 +32,12 @@ RUN useradd -ms /bin/bash gituser \
 
 ## Set permissions on gituser home directory
 RUN chown -R gituser:gituser /home/gituser \
-    && chown -R gituser:gituser /data \
     && mkdir -pv /home/gituser/.local /home/gituser/.ssh \
     && chmod -R u+w /home/gituser/.local /home/gituser/.ssh
+
+## Set permissions on data dir
+RUN sudo chown -R gituser:gituser /data \
+    && chmod -R u+w /data
 
 FROM base AS stage
 ## Add astral.sh/uv to container's /bin/ path
@@ -51,14 +59,15 @@ COPY src/ ./src
 COPY README.md ./README.md
 COPY mirrors.json ./mirrors.json
 
-USER gituser
-
 RUN uv sync --all-extras
 
 FROM stage AS run
 
 COPY --from=stage /home/gituser/.ssh /home/gituser/.ssh
 COPY --from=stage /project /project
+COPY --from=stage /data /data
 COPY --from=uv /uv /bin/
+
+USER gituser
 
 CMD ["uv", "run", "src/git_mirror/main.py"]
