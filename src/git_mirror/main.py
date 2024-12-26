@@ -277,28 +277,28 @@ if __name__ == "__main__":
     
     try:
         main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
-        
-        if APP_SETTINGS.get("CONTAINER_ENV", default=False):
-            import time
-            import datetime
-
-            sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
-            log.info(f"Detected script is running in a container. Sleeping for {sleep_seconds} before restarting...")
-            
-            time.sleep(sleep_seconds)
-            
-            log.info("Restarting container...")
-
-            ## Get the current time and add the sleep_seconds to it
-            next_execution = datetime.datetime.now() + datetime.timedelta(seconds=sleep_seconds)
-            print(f"Next execution: {next_execution.strftime('%Y-%m-%d %H:%M:%S')}")
-
-            exit(0)
-
-        exit(0)
     except GitNotInstalled:
         log.warning(GitNotInstalled())
         
         exit(1)
 
-    
+    ## Wait for a time between executions when running in a container.
+    if APP_SETTINGS.get("CONTAINER_ENV", default=False):
+        import time
+        import datetime
+
+        sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
+        log.info(f"Detected script is running in a container. Sleeping for {sleep_seconds} before restarting...")
+        
+        ## Get the current time and add the sleep_seconds to it
+        next_execution = datetime.datetime.now() + datetime.timedelta(seconds=sleep_seconds)
+        log.info(f"Next execution: {next_execution.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        time.sleep(sleep_seconds)
+        
+        log.info("Restarting container...")
+
+
+        exit(0)
+    else:
+        exit(0)
