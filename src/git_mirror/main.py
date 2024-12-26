@@ -266,6 +266,10 @@ if __name__ == "__main__":
     mirrors_file = Path("mirrors.json")
     repositories_dir = "repositories"
     
+    log.debug(f"Mirrors file: {mirrors_file}")
+    log.debug(f"Repositories directory: {repositories_dir}")
+    log.debug(f"Logs directory: {LOGGING_SETTINGS.get('LOG_DIR', default='<unset>')}")
+    
     try:
         main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
     except GitNotInstalled:
