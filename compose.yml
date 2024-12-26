@@ -19,9 +19,14 @@ services:
       DYNACONF_REPOSITORIES_DIR: ${CONTAINER_REPOSITORIES_DIR:-/data/repositories}
     volumes:
     #   - .:/project
-      ## Mount ~/.ssh directory from host to container in READ-ONLY mode
-      - ./containers/ssh/:/root/.ssh:ro
+      ## SSH (use only 1 volume mount below)
+      # Mount ~/.ssh directory from host to container in READ-ONLY mode
+      # - ./containers/ssh/:/gituser/.ssh:ro
+      # Use host's SSH directory.
+      - ~/.ssh:/home/gituser/.ssh:ro
+      ## Container repositories dir where repos will be cloned
       - git-mirror_repos:/data/repositories
+      ## Path to logs directory in container
       - ./containers/logs:/project/logs
     ## Drop into a Bash prompt for debugging
     command: sleep infinity
