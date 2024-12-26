@@ -1,9 +1,12 @@
-from loguru import logger as log
+from __future__ import annotations
+
+import json
+from pathlib import Path
+import subprocess
+
 from git_mirror.core import setup
 
-import subprocess
-from pathlib import Path
-import json
+from loguru import logger as log
 
 def return_script_dir():
     script_dir = Path(__file__).resolve().parent
