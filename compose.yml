@@ -30,6 +30,8 @@ services:
       - ./containers/logs:/data/logs
       ## Mount Python project in container
       - ./src:/project/src
+      ## Mount the host's /etc/tz directory in the container for syncing timezone
+      - /etc/tz:/etc/tz:ro
     ## Drop into a Bash prompt for debugging
     # command: sleep infinity
     ## Run the project with uv, sleeping for 1 hour between executions
