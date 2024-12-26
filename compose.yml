@@ -3,6 +3,8 @@ volumes:
 
 services:
   git-mirror:
+    container_name: git-mirror
+    restart: unless-stopped
     build:
       context: .
       args:
@@ -11,10 +13,16 @@ services:
     working_dir: /project
     environment:
       DYNACONF_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DYNACONF_LOG_DIR: ${LOG_DIR:-/data/logs}
       DYNACONF_MIRRORS_FILE: ${MIRRORS_FILE:-mirrors.json}
       DYNACONF_REPOSITORIES_DIR: ${CONTAINER_REPOSITORIES_DIR:-/data/repositories}
     volumes:
     #   - .:/project
+      ## Mount ~/.ssh directory from host to container in READ-ONLY mode
+      - ~/.ssh/:/root/.ssh:ro
       - git-mirror_repos:/data/repositories
-      - ./container_logs:/logss
-    command: uv run src/git_mirror/main.py
+      - ./container_logs:/project/logs
+    ## Drop into a Bash prompt for debugging
+    command: sleep infinity
+    ## Run the project with uv
+    # command: uv run src/git_mirror/main.py

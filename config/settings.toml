@@ -1,11 +1,14 @@
 [default]
 
 log_level = "INFO"
+log_dir = "logs"
+
 mirrors_file = "mirrors.json"
 repositories_dir = "repositories"
 
 [logging]
 # log_level = "DEBUG"
+# log_dir = "/var/log/git-mirror"
 
 [git]
 # mirrors_file = "mirrors_other.json"

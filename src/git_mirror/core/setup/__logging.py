@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 
 from loguru import logger
+from git_mirror.core.settings import GIT_MIRROR_SETTINGS
 
 def filter_info_debug_warning(record):
     return record["level"].name in ["WARNING", "INFO", "DEBUG"]
@@ -42,9 +43,11 @@ def setup_logging(
         for _logger in enable_loggers:
             logger.enable(_logger)
             
+    if add_file_logger or add_error_file_logger:
+        log_dir: str = GIT_MIRROR_SETTINGS.get("LOG_DIR", default="logs")
 
-    if add_file_logger:
-        logger.add("logs/app.log", filter=filter_info_debug_warning, format=fmt, retention=3, rotation="15 MB", level="DEBUG")
-        
-    if add_error_file_logger:
-        logger.add("logs/error.log", format=fmt, filter=filter_all_errors,retention=3, rotation="15 MB", level="ERROR")
+        if add_file_logger:
+            logger.add(f"{log_dir}/app.log", filter=filter_info_debug_warning, format=fmt, retention=3, rotation="15 MB", level="DEBUG")
+            
+        if add_error_file_logger:
+            logger.add(f"{log_dir}/error.log", format=fmt, filter=filter_all_errors,retention=3, rotation="15 MB", level="ERROR")
