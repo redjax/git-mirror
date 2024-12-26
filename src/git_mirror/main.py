@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import concurrent.futures
 import json
 from pathlib import Path
 import subprocess
 import sys
 import threading
 import typing as t
-import concurrent.futures
 
 from git_mirror.core import APP_SETTINGS, GIT_MIRROR_SETTINGS, LOGGING_SETTINGS, setup
 
