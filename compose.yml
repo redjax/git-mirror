@@ -25,6 +25,6 @@ services:
       ## Path to logs directory in container
       - ./containers/logs:/project/logs
     ## Drop into a Bash prompt for debugging
-    command: sleep infinity
+    # command: sleep infinity
     ## Run the project with uv
-    # command: uv run src/git_mirror/main.py
+    command: uv run src/git_mirror/main.py

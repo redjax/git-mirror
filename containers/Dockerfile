@@ -17,6 +17,9 @@ RUN apt-get update -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+## Create container /data directory
+RUN mkdir -pv /data
+
 ## Create a non-root user 'gituser' and add to sudo group
 RUN useradd -ms /bin/bash gituser \
     && usermod -aG sudo gituser \
@@ -24,6 +27,7 @@ RUN useradd -ms /bin/bash gituser \
 
 ## Set permissions on gituser home directory
 RUN chown -R gituser:gituser /home/gituser \
+    && chown -R gituser:gituser /data \
     && mkdir -pv /home/gituser/.local /home/gituser/.ssh \
     && chmod -R u+w /home/gituser/.local /home/gituser/.ssh
 
