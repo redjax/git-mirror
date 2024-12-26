@@ -1,0 +1,20 @@
+volumes:
+  git-mirror_repos: {}
+
+services:
+  git-mirror:
+    build:
+      context: .
+      args:
+        UV_IMG_VER: ${UV_IMG_VER:-0.5.11}
+        PYTHON_IMG_VER: ${PYTHON_IMG_VER:-3.12-slim}
+    working_dir: /project
+    environment:
+      DYNACONF_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DYNACONF_MIRRORS_FILE: ${MIRRORS_FILE:-mirrors.json}
+      DYNACONF_REPOSITORIES_DIR: ${CONTAINER_REPOSITORIES_DIR:-/data/repositories}
+    volumes:
+    #   - .:/project
+      - git-mirror_repos:/data/repositories
+      - ./container_logs:/logss
+    command: uv run src/git_mirror/main.py
