@@ -263,8 +263,11 @@ def main(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", default="<u
 if __name__ == "__main__":
     setup.setup_logging(log_level=LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger=True, add_error_file_logger=True, colorize=True)
     
-    mirrors_file = Path("mirrors.json")
-    repositories_dir = "repositories"
+    mirrors_file_str: str = APP_SETTINGS.get("MIRRORS_FILE", default="mirrors.json")
+    repositories_dir_str: str = APP_SETTINGS.get("REPOSITORIES_DIR", default="repositories")
+    
+    mirrors_file = Path(mirrors_file_str)
+    repositories_dir = repositories_dir_str
     
     log.debug(f"App settings: {APP_SETTINGS.as_dict()}")
     
@@ -274,21 +277,28 @@ if __name__ == "__main__":
     
     try:
         main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
-        
-        if APP_SETTINGS.get("CONTAINER_ENV", default=False):
-            import time
-            sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
-            log.info(f"Detected script is running in a container. Sleeping for {sleep_seconds} before restarting...")
-            
-            time.sleep(sleep_seconds)
-            
-            log.info("Restarting container...")
-            exit(0)
-
-        exit(0)
     except GitNotInstalled:
         log.warning(GitNotInstalled())
         
         exit(1)
 
-    
+    ## Wait for a time between executions when running in a container.
+    if APP_SETTINGS.get("CONTAINER_ENV", default=False):
+        import datetime
+        import time
+
+        sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
+        log.info(f"Detected script is running in a container. Sleeping for {sleep_seconds} before restarting...")
+        
+        ## Get the current time and add the sleep_seconds to it
+        next_execution = datetime.datetime.now() + datetime.timedelta(seconds=sleep_seconds)
+        log.info(f"Next execution: {next_execution.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        time.sleep(sleep_seconds)
+        
+        log.info("Restarting container...")
+
+
+        exit(0)
+    else:
+        exit(0)

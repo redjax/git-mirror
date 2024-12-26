@@ -92,9 +92,12 @@ To run the package inside a Docker container, there is some additional setup. Fo
 
 - Copy the following files:
   - [`.env.example`](./.env.example) -> `.env`
-- Create a directory at `containers/logs`
-  - `$ mkdir ./containers/logs`
-  - If the container creates this path, it is owned by `root:root` and the script fails in the container
+- Create the following directories in the [`containers/`](./containers) path:
+  - `containers/logs`: Path where the script will write logs when running in a container
+  - (Optional) `containers/repositories`:
+    - By default, the Docker Compose stack clones repositories to a named Docker volume `git-mirror_repos`.
+    - If you set a different path in the [`.env`](./.env.example) file's `HOST_REPOSITORIES_DIR=`, you must create the directory first.
+  - Any directories the container mounts on the host must exist in advance, otherwise they will be owned by `root:root` and the script will fail.
 - If you are not mounting the host's `~/.ssh` directory in the container, run the [`./scripts/generate_ssh_keys.sh`](./scripts/generate_ssh_keys.sh) script to create the container's SSH keys. Then, edit [`.env`](./.env.example), changing `CONTAINER_SSH_DIR=` to `CONTAINER_SSH_DIR=./containers/ssh`.
 
 The following environment variables are exposed to the user to control script's execution (these commands must be prefixed with `DYNACONF_`, because the Python app uses [Dynaconf](https://dynaconf.com) to load configurations from a file or the environment):
