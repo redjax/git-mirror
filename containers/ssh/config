@@ -1,0 +1,20 @@
+#######################################################
+# SSH config for Docker container                     #
+#                                                     #
+# This configuration will not be used on the host OS. #
+#######################################################
+
+Host github.com
+  User git
+  IdentityFile ~/.ssh/git_mirror_id_rsa
+  StrictHostKeyChecking no
+
+Host codeberg.org
+  User git
+  IdentityFile ~/.ssh/git_mirror_id_rsa
+  StrictHostKeyChecking no
+
+Host gitlab.com
+  User git
+  IdentityFile ~/.ssh/git_mirror_id_rsa
+  StrictHostKeyChecking no
