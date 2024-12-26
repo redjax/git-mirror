@@ -11,6 +11,48 @@ from git_mirror.core import setup
 
 from loguru import logger as log
 
+class GitNotInstalled(Exception):
+    def __init__(self, message: str = None):
+        ## Provide a default message if none is provided
+        if message is None:
+            message = f"git is not installed. Please install git (https://git-scm.com) before re-running this script."
+        super().__init__(message)
+
+
+def is_git_installed(raise_on_err: bool = False) -> bool:
+    """Check if the 'git' command is available on the host system.
+
+    Returns:
+        bool: True if 'git' is installed, False otherwise.
+
+    """
+    try:
+        # Run 'git --version' to check if Git is installed
+        result = subprocess.run(
+            ["git", "--version"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        log.info(f"Git is installed: {result.stdout.strip()}")
+        return True
+    except FileNotFoundError:
+        log.debug("Git is not installed or not found in PATH.")
+        
+        if raise_on_err:
+            raise GitNotInstalled()
+        else:
+            return False
+    except subprocess.CalledProcessError as e:
+        log.debug(f"Git command failed: {e.stderr.strip()}")
+        
+        if raise_on_err:
+            raise GitNotInstalled()
+        else:    
+            return False
+
+
 def return_script_dir():
     script_dir = Path(__file__).resolve().parent
     log.debug(f"Script path: {script_dir}")
@@ -208,16 +250,26 @@ def process_repositories(mirrors, base_dir):
             continue
 
 
+def main(mirrors_file, repositories_dir):
+    if not is_git_installed():
+        raise GitNotInstalled
+
+    try:
+        mirrors = load_mirrors(mirrors_file)
+        process_repositories(mirrors, repositories_dir)
+    except Exception as e:
+        print(f"Failed to process repositories: {e}")
+
 if __name__ == "__main__":
     setup.setup_logging(log_level="DEBUG", add_file_logger=True, add_error_file_logger=True, colorize=True)
     
-    log.info("Start git_mirror script")
-
-    mirrors_path = Path("mirrors.json")
-    base_dir = "repositories"
-
+    mirrors_file = Path("mirrors.json")
+    repositories_dir = "repositories"
+    
     try:
-        mirrors = load_mirrors(mirrors_path)
-        process_repositories(mirrors, base_dir)
-    except Exception as e:
-        print(f"Failed to process repositories: {e}")
+        main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
+    except GitNotInstalled:
+        log.warning(GitNotInstalled())
+        sys.exit(1)
+
+    
