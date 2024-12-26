@@ -263,8 +263,11 @@ def main(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", default="<u
 if __name__ == "__main__":
     setup.setup_logging(log_level=LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger=True, add_error_file_logger=True, colorize=True)
     
-    mirrors_file = Path("mirrors.json")
-    repositories_dir = "repositories"
+    mirrors_file_str: str = APP_SETTINGS.get("MIRRORS_FILE", default="mirrors.json")
+    repositories_dir_str: str = APP_SETTINGS.get("REPOSITORIES_DIR", default="repositories")
+    
+    mirrors_file = Path(mirrors_file_str)
+    repositories_dir = repositories_dir_str
     
     log.debug(f"App settings: {APP_SETTINGS.as_dict()}")
     
@@ -286,9 +289,9 @@ if __name__ == "__main__":
             
             log.info("Restarting container...")
 
-            # Get the current time and add the sleep_seconds to it
+            ## Get the current time and add the sleep_seconds to it
             next_execution = datetime.datetime.now() + datetime.timedelta(seconds=sleep_seconds)
-            log.info(f"Next execution: {next_execution.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"Next execution: {next_execution.strftime('%Y-%m-%d %H:%M:%S')}")
 
             exit(0)
 

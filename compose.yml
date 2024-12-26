@@ -25,7 +25,7 @@ services:
       ## Mount a .ssh directory in the container
       - ${CONTAINER_SSH_DIR:-~/.ssh}:/home/gituser/.ssh
       ## Container repositories dir where repos will be cloned
-      - git-mirror_repos:/data/repositories
+      - ${HOST_REPOSITORIES_DIR:-git-mirror_repos}:/data/repositories
       ## Path to logs directory in container
       - ./containers/logs:/data/logs
       ## Mount Python project in container
