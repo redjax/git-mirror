@@ -284,8 +284,8 @@ if __name__ == "__main__":
 
     ## Wait for a time between executions when running in a container.
     if APP_SETTINGS.get("CONTAINER_ENV", default=False):
-        import time
         import datetime
+        import time
 
         sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
         log.info(f"Detected script is running in a container. Sleeping for {sleep_seconds} before restarting...")
