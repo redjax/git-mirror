@@ -13,6 +13,8 @@ services:
         PYTHON_IMG_VER: ${PYTHON_IMG_VER:-3.12-slim}
     working_dir: /project
     environment:
+      DYNACONF_CONTAINER_ENV: true
+      DYNACONF_EXEC_SLEEP: ${GIT_MIRROR_COMMAND_SLEEP:-3600}
       DYNACONF_LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DYNACONF_LOG_DIR: ${LOG_DIR:-/data/logs}
       DYNACONF_MIRRORS_FILE: ${MIRRORS_FILE:-mirrors.json}

@@ -1,6 +1,12 @@
 from loguru import logger as log
 from dynaconf import Dynaconf
 
+APP_SETTINGS = Dynaconf(
+    environments=True,
+    envvar_prefix="DYNACONF",
+    settings_files=["settings.toml", ".secrets.toml"]
+)
+
 LOGGING_SETTINGS = Dynaconf(
     environments=True,
     env="logging",

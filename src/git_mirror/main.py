@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import threading
 
-from git_mirror.core import setup, LOGGING_SETTINGS, GIT_MIRROR_SETTINGS
+from git_mirror.core import setup, LOGGING_SETTINGS, GIT_MIRROR_SETTINGS, APP_SETTINGS
 
 from loguru import logger as log
 
@@ -266,14 +266,29 @@ if __name__ == "__main__":
     mirrors_file = Path("mirrors.json")
     repositories_dir = "repositories"
     
+    log.debug(f"App settings: {APP_SETTINGS.as_dict()}")
+    
     log.debug(f"Mirrors file: {mirrors_file}")
     log.debug(f"Repositories directory: {repositories_dir}")
     log.debug(f"Logs directory: {LOGGING_SETTINGS.get('LOG_DIR', default='<unset>')}")
     
     try:
         main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
+        
+        if APP_SETTINGS.get("CONTAINER_ENV", default=False):
+            import time
+            sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
+            log.info(f"Detected script is running in a container. Sleeping for {sleep_seconds} before restarting...")
+            
+            time.sleep(sleep_seconds)
+            
+            log.info("Restarting container...")
+            exit(0)
+
+        exit(0)
     except GitNotInstalled:
         log.warning(GitNotInstalled())
-        sys.exit(1)
+        
+        exit(1)
 
     
