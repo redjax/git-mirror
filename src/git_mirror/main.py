@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import threading
 
-from git_mirror.core import setup
+from git_mirror.core import setup, LOGGING_SETTINGS, GIT_MIRROR_SETTINGS
 
 from loguru import logger as log
 
@@ -250,7 +250,7 @@ def process_repositories(mirrors, base_dir):
             continue
 
 
-def main(mirrors_file, repositories_dir):
+def main(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", default="<unset>"), repositories_dir: str = GIT_MIRROR_SETTINGS.get("REPOSITORIES_DIR", default="<unset>")):
     if not is_git_installed():
         raise GitNotInstalled
 
@@ -261,7 +261,7 @@ def main(mirrors_file, repositories_dir):
         print(f"Failed to process repositories: {e}")
 
 if __name__ == "__main__":
-    setup.setup_logging(log_level="DEBUG", add_file_logger=True, add_error_file_logger=True, colorize=True)
+    setup.setup_logging(log_level=LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger=True, add_error_file_logger=True, colorize=True)
     
     mirrors_file = Path("mirrors.json")
     repositories_dir = "repositories"
