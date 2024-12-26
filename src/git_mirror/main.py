@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 import subprocess
+import threading
 
 from git_mirror.core import setup
 
@@ -17,10 +18,19 @@ def return_script_dir():
     return script_dir
 
 
-def run_command(command: list[str], cwd: t.Union[str, Path] | None = None, stream: bool =False):
-    """Run a command and handle errors, with optional real-time output streaming.
+def _stream_output(pipe, output_function):
+    """Stream subprocess output line by line."""
+    try:
+        for line in iter(pipe.readline, ''):
+            output_function(line)
+    finally:
+        pipe.close()
 
-    Params:
+def run_command(command, cwd=None, stream=False):
+    """
+    Run a command and handle errors, with optional real-time output streaming.
+
+    Args:
         command (list): The command to run as a list of arguments.
         cwd (str or Path, optional): The working directory to run the command in.
         stream (bool): If True, stream output in real time. If False, capture output.
@@ -28,27 +38,48 @@ def run_command(command: list[str], cwd: t.Union[str, Path] | None = None, strea
     Returns:
         subprocess.CompletedProcess: The result of the subprocess call if stream=False.
         None: If stream=True (real-time streaming mode).
-
     """
     log.info(f"Running command: {' '.join(command)} in {cwd or Path.cwd()}")
 
     try:
         if stream:
-            with subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
-                try:
-                    for line in process.stdout:
-                        print(line, end="")  # Stream stdout to console
-                    for line in process.stderr:
-                        print(line, end="", file=sys.stderr)  # Stream stderr to console
-                except KeyboardInterrupt:
-                    process.terminate()
-                    log.warning("Command interrupted by user.")
+            with subprocess.Popen(
+                command,
+                cwd=cwd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+            ) as process:
+                # Create threads to handle stdout and stderr concurrently
+                stdout_thread = threading.Thread(target=_stream_output, args=(process.stdout, sys.stdout.write))
+                stderr_thread = threading.Thread(target=_stream_output, args=(process.stderr, sys.stderr.write))
+                
+                stdout_thread.start()
+                stderr_thread.start()
+
+                # Wait for the process to complete
                 process.wait()
+
+                # Ensure threads finish
+                stdout_thread.join()
+                stderr_thread.join()
+
+                # Check if the command was successful
+                if process.returncode != 0:
+                    raise subprocess.CalledProcessError(process.returncode, command)
+
             return None
         else:
-            result = subprocess.run(command, cwd=cwd, check=True, text=True, capture_output=True)
+            # Run the command and capture output
+            result = subprocess.run(
+                command, cwd=cwd, check=True, text=True, capture_output=True
+            )
             if result.stdout:
                 log.info(result.stdout)
+            if result.stderr:
+                log.info(result.stderr)
             return result
     except subprocess.CalledProcessError as e:
         log.error(f"Error running command: {' '.join(command)}. Details: {e.stderr}")
@@ -57,7 +88,7 @@ def run_command(command: list[str], cwd: t.Union[str, Path] | None = None, strea
         msg = f"({type(exc).__name__}) Unhandled exception running command. Details: {exc}"
         log.error(msg)
         raise
-
+    
 
 def clone_mirror(src_url: str, dest_dir: t.Union[str, Path], stream: bool = True):
     """Clone a repository as a bare mirror."""
