@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import concurrent.futures
 import json
 from pathlib import Path
 import subprocess
@@ -227,27 +228,35 @@ def process_repositories(mirrors, base_dir):
     base_path = Path(base_dir)
     base_path.mkdir(exist_ok=True)
 
-    for mirror in mirrors:
-        log.debug(f"Mirror source: {mirror['src']}, Mirror target: {mirror['mirror']}")
-        try:
-            src = mirror["src"]
-            mirror_url = mirror["mirror"]
-            print(f"Processing repository: {src}")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        futures = []
+        for mirror in mirrors:
+            log.debug(f"Mirror source: {mirror['src']}, Mirror target: {mirror['mirror']}")
+            try:
+                src = mirror["src"]
+                mirror_url = mirror["mirror"]
+                print(f"Processing repository: {src}")
 
-            repo_name = Path(src.split("/")[-1]).stem + ".git"  # Add .git suffix
-            repo_dir = base_path / repo_name
+                repo_name = Path(src.split("/")[-1]).stem + ".git"  # Add .git suffix
+                repo_dir = base_path / repo_name
 
-            if not repo_dir.exists():
-                clone_mirror(src, repo_dir)
-                set_push_remote(repo_dir, mirror_url)
-                push_mirror(repo_dir)
-            else:
-                log.info(f"Repository {repo_dir} already exists. Updating mirror...")
-                update_mirror(repo_dir)
+                if not repo_dir.exists():
+                    futures.append(executor.submit(clone_mirror, src, repo_dir))
+                    futures.append(executor.submit(set_push_remote, repo_dir, mirror_url))
+                    futures.append(executor.submit(push_mirror, repo_dir))
+                else:
+                    log.info(f"Repository {repo_dir} already exists. Updating mirror...")
+                    futures.append(executor.submit(update_mirror, repo_dir))
 
-        except Exception as e:
-            log.error(f"Error processing repository {src}: {e}")
-            continue
+            except Exception as e:
+                log.error(f"Error processing repository {src}: {e}")
+                continue
+
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                log.error(f"Error running git operation: {e}")
 
 
 def main(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", default="<unset>"), repositories_dir: str = GIT_MIRROR_SETTINGS.get("REPOSITORIES_DIR", default="<unset>")):
