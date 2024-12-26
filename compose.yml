@@ -28,6 +28,8 @@ services:
       - git-mirror_repos:/data/repositories
       ## Path to logs directory in container
       - ./containers/logs:/data/logs
+      ## Mount Python project in container
+      - ./src:/project/src
     ## Drop into a Bash prompt for debugging
     # command: sleep infinity
     ## Run the project with uv, sleeping for 1 hour between executions
