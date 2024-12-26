@@ -1,1 +1,3 @@
-from .settings import LOGGING_SETTINGS, GIT_MIRROR_SETTINGS, APP_SETTINGS
+from __future__ import annotations
+
+from .settings import APP_SETTINGS, GIT_MIRROR_SETTINGS, LOGGING_SETTINGS

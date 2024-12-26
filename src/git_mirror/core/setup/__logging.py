@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import sys
 
-from loguru import logger
 from git_mirror.core.settings import GIT_MIRROR_SETTINGS
+
+from loguru import logger
 
 def filter_info_debug_warning(record):
     return record["level"].name in ["WARNING", "INFO", "DEBUG"]

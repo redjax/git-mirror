@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import typing as t
 import json
-import sys
 from pathlib import Path
 import subprocess
+import sys
 import threading
+import typing as t
 
-from git_mirror.core import setup, LOGGING_SETTINGS, GIT_MIRROR_SETTINGS, APP_SETTINGS
+from git_mirror.core import APP_SETTINGS, GIT_MIRROR_SETTINGS, LOGGING_SETTINGS, setup
 
 from loguru import logger as log
 
@@ -69,8 +69,7 @@ def _stream_output(pipe, output_function):
         pipe.close()
 
 def run_command(command, cwd=None, stream=False):
-    """
-    Run a command and handle errors, with optional real-time output streaming.
+    """Run a command and handle errors, with optional real-time output streaming.
 
     Args:
         command (list): The command to run as a list of arguments.
@@ -80,6 +79,7 @@ def run_command(command, cwd=None, stream=False):
     Returns:
         subprocess.CompletedProcess: The result of the subprocess call if stream=False.
         None: If stream=True (real-time streaming mode).
+
     """
     log.info(f"Running command: {' '.join(command)} in {cwd or Path.cwd()}")
 
