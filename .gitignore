@@ -202,3 +202,5 @@ mirrors.json
 repositories
 logs/
 sandbox/
+# containers/ssh
+**/*id_rsa*

@@ -1,0 +1,4 @@
+[
+    {"src": "git@github.com:username/repo.git", "mirror": "git@codeberg.org:username/repo.git"},
+    {"src": "git@github.com:username/repo.git", "mirror": "git@gitlab.com:username/repo.git"}
+]

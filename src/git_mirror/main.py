@@ -1,15 +1,57 @@
 from __future__ import annotations
 
-import typing as t
 import json
-import sys
 from pathlib import Path
 import subprocess
+import sys
 import threading
+import typing as t
 
-from git_mirror.core import setup
+from git_mirror.core import APP_SETTINGS, GIT_MIRROR_SETTINGS, LOGGING_SETTINGS, setup
 
 from loguru import logger as log
+
+class GitNotInstalled(Exception):
+    def __init__(self, message: str = None):
+        ## Provide a default message if none is provided
+        if message is None:
+            message = f"git is not installed. Please install git (https://git-scm.com) before re-running this script."
+        super().__init__(message)
+
+
+def is_git_installed(raise_on_err: bool = False) -> bool:
+    """Check if the 'git' command is available on the host system.
+
+    Returns:
+        bool: True if 'git' is installed, False otherwise.
+
+    """
+    try:
+        # Run 'git --version' to check if Git is installed
+        result = subprocess.run(
+            ["git", "--version"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        log.info(f"Git is installed: {result.stdout.strip()}")
+        return True
+    except FileNotFoundError:
+        log.debug("Git is not installed or not found in PATH.")
+        
+        if raise_on_err:
+            raise GitNotInstalled()
+        else:
+            return False
+    except subprocess.CalledProcessError as e:
+        log.debug(f"Git command failed: {e.stderr.strip()}")
+        
+        if raise_on_err:
+            raise GitNotInstalled()
+        else:    
+            return False
+
 
 def return_script_dir():
     script_dir = Path(__file__).resolve().parent
@@ -27,8 +69,7 @@ def _stream_output(pipe, output_function):
         pipe.close()
 
 def run_command(command, cwd=None, stream=False):
-    """
-    Run a command and handle errors, with optional real-time output streaming.
+    """Run a command and handle errors, with optional real-time output streaming.
 
     Args:
         command (list): The command to run as a list of arguments.
@@ -38,6 +79,7 @@ def run_command(command, cwd=None, stream=False):
     Returns:
         subprocess.CompletedProcess: The result of the subprocess call if stream=False.
         None: If stream=True (real-time streaming mode).
+
     """
     log.info(f"Running command: {' '.join(command)} in {cwd or Path.cwd()}")
 
@@ -208,16 +250,45 @@ def process_repositories(mirrors, base_dir):
             continue
 
 
-if __name__ == "__main__":
-    setup.setup_logging(log_level="DEBUG", add_file_logger=True, add_error_file_logger=True, colorize=True)
-    
-    log.info("Start git_mirror script")
-
-    mirrors_path = Path("mirrors.json")
-    base_dir = "repositories"
+def main(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", default="<unset>"), repositories_dir: str = GIT_MIRROR_SETTINGS.get("REPOSITORIES_DIR", default="<unset>")):
+    if not is_git_installed():
+        raise GitNotInstalled
 
     try:
-        mirrors = load_mirrors(mirrors_path)
-        process_repositories(mirrors, base_dir)
+        mirrors = load_mirrors(mirrors_file)
+        process_repositories(mirrors, repositories_dir)
     except Exception as e:
         print(f"Failed to process repositories: {e}")
+
+if __name__ == "__main__":
+    setup.setup_logging(log_level=LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger=True, add_error_file_logger=True, colorize=True)
+    
+    mirrors_file = Path("mirrors.json")
+    repositories_dir = "repositories"
+    
+    log.debug(f"App settings: {APP_SETTINGS.as_dict()}")
+    
+    log.debug(f"Mirrors file: {mirrors_file}")
+    log.debug(f"Repositories directory: {repositories_dir}")
+    log.debug(f"Logs directory: {LOGGING_SETTINGS.get('LOG_DIR', default='<unset>')}")
+    
+    try:
+        main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
+        
+        if APP_SETTINGS.get("CONTAINER_ENV", default=False):
+            import time
+            sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
+            log.info(f"Detected script is running in a container. Sleeping for {sleep_seconds} before restarting...")
+            
+            time.sleep(sleep_seconds)
+            
+            log.info("Restarting container...")
+            exit(0)
+
+        exit(0)
+    except GitNotInstalled:
+        log.warning(GitNotInstalled())
+        
+        exit(1)
+
+    

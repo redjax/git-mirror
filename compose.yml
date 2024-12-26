@@ -1,0 +1,36 @@
+volumes:
+  git-mirror_repos: {}
+
+services:
+  git-mirror:
+    container_name: git-mirror
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./containers/Dockerfile
+      args:
+        UV_IMG_VER: ${UV_IMG_VER:-0.5.11}
+        PYTHON_IMG_VER: ${PYTHON_IMG_VER:-3.12-slim}
+    working_dir: /project
+    environment:
+      DYNACONF_CONTAINER_ENV: true
+      DYNACONF_EXEC_SLEEP: ${GIT_MIRROR_COMMAND_SLEEP:-3600}
+      DYNACONF_LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DYNACONF_LOG_DIR: ${LOG_DIR:-/data/logs}
+      DYNACONF_MIRRORS_FILE: ${MIRRORS_FILE:-mirrors.json}
+      DYNACONF_REPOSITORIES_DIR: ${CONTAINER_REPOSITORIES_DIR:-/data/repositories}
+    volumes:
+      ## Mount the mirrors JSON file in the container
+      - ${MIRRORS_FILE:-./mirrors.json}:/project/mirrors.json
+      ## Mount a .ssh directory in the container
+      - ${CONTAINER_SSH_DIR:-~/.ssh}:/home/gituser/.ssh
+      ## Container repositories dir where repos will be cloned
+      - git-mirror_repos:/data/repositories
+      ## Path to logs directory in container
+      - ./containers/logs:/data/logs
+      ## Mount Python project in container
+      - ./src:/project/src
+    ## Drop into a Bash prompt for debugging
+    # command: sleep infinity
+    ## Run the project with uv, sleeping for 1 hour between executions
+    command: ${GIT_MIRROR_COMMAND:-uv run src/git_mirror/main.py && sleep 3600}
