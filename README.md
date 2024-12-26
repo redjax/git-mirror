@@ -97,6 +97,17 @@ To run the package inside a Docker container, there is some additional setup. Fo
   - If the container creates this path, it is owned by `root:root` and the script fails in the container
 - If you are not mounting the host's `~/.ssh` directory in the container, run the [`./scripts/generate_ssh_keys.sh`](./scripts/generate_ssh_keys.sh) script to create the container's SSH keys. Then, edit [`.env`](./.env.example), changing `CONTAINER_SSH_DIR=` to `CONTAINER_SSH_DIR=./containers/ssh`.
 
+The following environment variables are exposed to the user to control script's execution (these commands must be prefixed with `DYNACONF_`, because the Python app uses [Dynaconf](https://dynaconf.com) to load configurations from a file or the environment):
+
+| Env Variable | Default Value | Description |
+| ------------ | ------------- | ----------- |
+| DYNACONF_CONTAINER_ENV | `true` | Tell the script it is running in a container. |
+| DYNACONF_EXEC_SLEEP | `3600` | Time (in seconds) between script executions when running in a container. Default is `3600`, which is 1 hour. |
+| DYNACONF_LOG_LEVEL | `INFO` | The log level for the script. Options: [`NOTSET`, `WARNING`, `INFO`, `DEBUG`, `ERROR`, `CRITICAL`]. |
+| DYNACONF_LOG_DIR | `/data/logs` | Override the default `./logs` path when in a container. If you change this, make sure to update the `./containers/logs:/data/logs` volume mount in the [`compose.yml`](./compose.yml) file. Change the part after the `:`. |
+| DYNACONF_MIRRORS_FILE | `mirrors.json` | The JSON file to read where repository mirror pairs are defined. |
+| DYNACONF_REPOSITORIES_DIR | `/data/repositories` | The path in the container where git repositories will be cloned. Must be outside of the `/project` path. If you change this, you will need to update the `Dockerfile`'s `chown` and `mkdir` lines. |
+
 ## Usage
 
 ### Python script
