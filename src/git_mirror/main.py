@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import typing as t
 import json
+import sys
 from pathlib import Path
 import subprocess
 
@@ -15,31 +17,54 @@ def return_script_dir():
     return script_dir
 
 
-def run_git_command(command, cwd=None):
-    """Run a git command and handle errors."""
-    try:
-        log.info(f"Running command: {' '.join(command)} in {cwd or Path.cwd()}")
-        result = subprocess.run(command, cwd=cwd, check=True, text=True, capture_output=True)
-        if result.stdout:
-            log.info(result.stdout)
+def run_command(command: list[str], cwd: t.Union[str, Path] | None = None, stream: bool =False):
+    """Run a command and handle errors, with optional real-time output streaming.
 
-        return result
+    Params:
+        command (list): The command to run as a list of arguments.
+        cwd (str or Path, optional): The working directory to run the command in.
+        stream (bool): If True, stream output in real time. If False, capture output.
+
+    Returns:
+        subprocess.CompletedProcess: The result of the subprocess call if stream=False.
+        None: If stream=True (real-time streaming mode).
+
+    """
+    log.info(f"Running command: {' '.join(command)} in {cwd or Path.cwd()}")
+
+    try:
+        if stream:
+            with subprocess.Popen(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
+                try:
+                    for line in process.stdout:
+                        print(line, end="")  # Stream stdout to console
+                    for line in process.stderr:
+                        print(line, end="", file=sys.stderr)  # Stream stderr to console
+                except KeyboardInterrupt:
+                    process.terminate()
+                    log.warning("Command interrupted by user.")
+                process.wait()
+            return None
+        else:
+            result = subprocess.run(command, cwd=cwd, check=True, text=True, capture_output=True)
+            if result.stdout:
+                log.info(result.stdout)
+            return result
     except subprocess.CalledProcessError as e:
         log.error(f"Error running command: {' '.join(command)}. Details: {e.stderr}")
-        
         raise
     except Exception as exc:
-        msg = f"({type(exc)}) Unhandled exception runnint git command. Details: {exc}"
+        msg = f"({type(exc).__name__}) Unhandled exception running command. Details: {exc}"
         log.error(msg)
-        
         raise
 
-def clone_mirror(src_url, dest_dir):
+
+def clone_mirror(src_url: str, dest_dir: t.Union[str, Path], stream: bool = True):
     """Clone a repository as a bare mirror."""
     log.info(f"Cloning repository {src_url} into {dest_dir}")
     
     try:
-        run_git_command(["git", "clone", "--mirror", src_url, str(dest_dir)])
+        run_command(["git", "clone", "--mirror", src_url, str(dest_dir)], stream=stream)
     except subprocess.CalledProcessError as e:
         log.error(f"Error cloning repository {src_url}: {e.stderr}")
         raise
@@ -50,11 +75,11 @@ def clone_mirror(src_url, dest_dir):
         raise
 
 
-def set_push_remote(repo_dir, mirror_url):
+def set_push_remote(repo_dir: t.Union[str, Path], mirror_url: str, stream: bool = True):
     """Set the push URL for the repository."""
     log.info(f"Setting push remote URL to {mirror_url} in {repo_dir}")
     try:
-        run_git_command(["git", "remote", "set-url", "--push", "origin", mirror_url], cwd=repo_dir)
+        run_command(["git", "remote", "set-url", "--push", "origin", mirror_url], cwd=repo_dir, stream=stream)
     except subprocess.CalledProcessError as e:
         log.error(f"Error setting push remote URL: {e.stderr}")
         raise
@@ -65,11 +90,11 @@ def set_push_remote(repo_dir, mirror_url):
         raise
 
 
-def push_mirror(repo_dir):
+def push_mirror(repo_dir: t.Union[str, Path], stream: bool = True):
     """Push all branches and tags to the mirror repository."""
     log.info(f"Pushing all branches and tags from {repo_dir}")
     try:
-        run_git_command(["git", "push", "--mirror"], cwd=repo_dir)
+        run_command(["git", "push", "--mirror"], cwd=repo_dir, stream=stream)
     except subprocess.CalledProcessError as e:
         log.error(f"Error pushing mirror: {e.stderr}")
         raise
@@ -80,13 +105,13 @@ def push_mirror(repo_dir):
         raise
 
 
-def update_mirror(repo_dir):
+def update_mirror(repo_dir: t.Union[str, Path], stream: bool = True):
     """Update the mirror by fetching and pushing changes."""
     log.info(f"Updating mirror for {repo_dir}")
     
     log.info("Fetching changes from remote")
     try:
-        run_git_command(["git", "fetch", "-p", "origin"], cwd=repo_dir)
+        run_command(["git", "fetch", "-p", "origin"], cwd=repo_dir, stream=stream)
     except subprocess.CalledProcessError as e:
         log.error(f"Error fetching changes: {e.stderr}")
         raise
@@ -98,7 +123,7 @@ def update_mirror(repo_dir):
     
     log.info("Pushing changes to remote")
     try:
-        run_git_command(["git", "push", "--mirror"], cwd=repo_dir)
+        run_command(["git", "push", "--mirror"], cwd=repo_dir, stream=stream)
     except subprocess.CalledProcessError as e:
         log.error(f"Error pushing changes: {e.stderr}")
         raise
