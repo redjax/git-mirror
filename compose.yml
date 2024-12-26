@@ -26,5 +26,5 @@ services:
       - ./containers/logs:/data/logs
     ## Drop into a Bash prompt for debugging
     # command: sleep infinity
-    ## Run the project with uv
-    command: uv run src/git_mirror/main.py
+    ## Run the project with uv, sleeping for 1 hour between executions
+    command: ${GIT_MIRROR_COMMAND:-uv run src/git_mirror/main.py && sleep 3600}
