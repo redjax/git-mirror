@@ -1,7 +1,7 @@
 ## Add build args.
 #  You can pass different args for these values in a docker-compose.yml
 #  file's build: section
-ARG UV_BASE=${UV_IMG_VER:-0.4.27}
+ARG UV_BASE=${UV_IMG_VER:-0.5.11}
 ARG PYTHON_BASE=${PYTHON_IMG_VER:-3.12-slim}
 
 FROM ghcr.io/astral-sh/uv:$UV_BASE AS uv
@@ -21,29 +21,13 @@ RUN apt-get update -y \
 RUN mkdir -pv /data/logs && \
     mkdir -pv /data/repositories
 
-## Seed app log files
-RUN touch /data/logs/app.log \
-    && touch /data/logs/error.log
-
-## Create a non-root user 'gituser' and add to sudo group
-RUN useradd -ms /bin/bash gituser \
-    && usermod -aG sudo gituser \
-    && echo "gituser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/gituser
-
-## Set permissions on gituser home directory
-RUN chown -R gituser:gituser /home/gituser \
-    && mkdir -pv /home/gituser/.local /home/gituser/.ssh \
-    && chmod -R u+w /home/gituser/.local /home/gituser/.ssh
-
-## Set permissions on data dir
-RUN sudo chown -R gituser:gituser /data \
-    && chmod -R u+w /data
+# ## Seed app log files
+# RUN touch /data/logs/app.log \
+#     && touch /data/logs/error.log
 
 FROM base AS stage
 ## Add astral.sh/uv to container's /bin/ path
 COPY --from=uv /uv /bin/
-
-USER gituser
 
 ## Set environment variables. These will be passed
 #  to stages that inherit from this layer
@@ -59,18 +43,17 @@ COPY src/ ./src
 COPY README.md ./README.md
 COPY mirrors.json ./mirrors.json
 
-RUN uv sync --all-extras
+USER root
+RUN uv sync
 
 FROM stage AS run
 
-COPY --from=stage /home/gituser/.ssh /home/gituser/.ssh
+# COPY --from=stage /root/.ssh /root/.ssh
 COPY --from=stage /project /project
 COPY --from=stage /data /data
 COPY --from=uv /uv /bin/
-COPY ./containers/docker-entrypoint/entrypoint.sh /project/entrypoint.sh
+# COPY ./containers/docker-entrypoint/entrypoint.sh /project/entrypoint.sh
 
 USER root
-ENTRYPOINT ["sudo", "/bin/sh", "/project/entrypoint.sh"]
 
-USER gituser
 CMD ["uv", "run", "src/git_mirror/main.py"]

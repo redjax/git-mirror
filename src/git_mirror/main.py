@@ -156,12 +156,12 @@ def set_push_remote(repo_dir: t.Union[str, Path], mirror_url: str, stream: bool 
         run_command(["git", "remote", "set-url", "--push", "origin", mirror_url], cwd=repo_dir, stream=stream)
     except subprocess.CalledProcessError as e:
         log.error(f"Error setting push remote URL: {e.stderr}")
-        raise
+        raise e
     except Exception as exc:
         msg = f"({type(exc)}) Unhandled exception setting push remote URL. Details: {exc}"
         log.error(msg)
         
-        raise
+        raise exc
 
 
 def push_mirror(repo_dir: t.Union[str, Path], stream: bool = True):
@@ -277,6 +277,9 @@ if __name__ == "__main__":
     
     mirrors_file = Path(mirrors_file_str)
     repositories_dir = repositories_dir_str
+    
+    if not Path(repositories_dir).exists():
+        Path(repositories_dir).mkdir(parents=True, exist_ok=True)
     
     log.debug(f"App settings: {APP_SETTINGS.as_dict()}")
     

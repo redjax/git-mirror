@@ -1,6 +1,7 @@
 volumes:
-  git-mirror_repos: {}
-  git-mirror_logs: {}
+  # git-mirror_repos: {}
+  # git-mirror_logs: {}
+  git-mirror_data: {}
 
 services:
   git-mirror:
@@ -8,13 +9,15 @@ services:
     restart: unless-stopped
     build:
       context: .
-      dockerfile: ./containers/Dockerfile
+      dockerfile: ./containers/test.Dockerfile
       args:
         UV_IMG_VER: ${UV_IMG_VER:-0.5.11}
         PYTHON_IMG_VER: ${PYTHON_IMG_VER:-3.12-slim}
     working_dir: /project
     environment:
       TZ: ${TZ:-ETC/UTC}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       DYNACONF_CONTAINER_ENV: true
       DYNACONF_EXEC_SLEEP: ${GIT_MIRROR_COMMAND_SLEEP:-3600}
       DYNACONF_LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -25,7 +28,7 @@ services:
       ## Mount the mirrors JSON file in the container
       - ${MIRRORS_FILE:-./mirrors.json}:/project/mirrors.json
       ## Mount a .ssh directory in the container
-      - ${CONTAINER_SSH_DIR:-./containers/ssh}:/home/gituser/.ssh
+      - ${CONTAINER_SSH_DIR:-./containers/ssh}:/root/.ssh
       ## Container repositories dir where repos will be cloned
       - ${HOST_REPOSITORIES_DIR:-git-mirror_repos}:/data/repositories
       ## Path to logs directory in container
