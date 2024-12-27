@@ -88,6 +88,14 @@ If you are just running the [`git_mirror` Python package](./src/git_mirror/), yo
 
 ### Docker Compose stack
 
+```
+!!! WARNING !!!
+
+Until this message is removed, the Dockerfile is broken. The container just returns permission errors.
+
+I'll fix it later...probably...
+```
+
 To run the package inside a Docker container, there is some additional setup. Following the instructions in the [Python setup section](#python-script), you can skip steps related to copying/creating files in the [`./config`](./config) directory. You will need to copy some Docker files and create a `containers/logs` directory so the script doesn't throw permission errors.
 
 - Copy the following files:
