@@ -13,7 +13,10 @@ RUN apt-get update -y \
         build-essential \
         curl \
         git \
-        openssh-client \
+        openssh-server \
+        ca-certificates \
+        apt-transport-https \
+        software-properties-common \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -67,10 +70,10 @@ COPY --from=stage /home/gituser/.ssh /home/gituser/.ssh
 COPY --from=stage /project /project
 COPY --from=stage /data /data
 COPY --from=uv /uv /bin/
-COPY ./containers/docker-entrypoint/entrypoint.sh /project/entrypoint.sh
 
 USER root
-ENTRYPOINT ["sudo", "/bin/sh", "/project/entrypoint.sh"]
+RUN sudo chown -R gituser:gituser /data \
+    && chmod -R u+w /data
 
 USER gituser
 CMD ["uv", "run", "src/git_mirror/main.py"]

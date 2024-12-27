@@ -61,13 +61,11 @@ def return_script_dir():
     return script_dir
 
 
-def _stream_output(pipe, output_function):
+def _stream_output(pipe: t.IO[str], output_function: t.Callable[[str], None]):
     """Stream subprocess output line by line."""
-    try:
+    with pipe:  # Ensure the pipe is closed automatically
         for line in iter(pipe.readline, ''):
             output_function(line)
-    finally:
-        pipe.close()
 
 def run_command(command, cwd=None, stream=False):
     """Run a command and handle errors, with optional real-time output streaming.

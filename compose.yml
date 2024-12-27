@@ -9,11 +9,12 @@ services:
     restart: unless-stopped
     build:
       context: .
-      dockerfile: ./containers/test.Dockerfile
+      dockerfile: ./containers/Dockerfile
       args:
         UV_IMG_VER: ${UV_IMG_VER:-0.5.11}
         PYTHON_IMG_VER: ${PYTHON_IMG_VER:-3.12-slim}
     working_dir: /project
+    user: gituser
     environment:
       TZ: ${TZ:-ETC/UTC}
       PUID: ${PUID:-1000}
@@ -28,7 +29,7 @@ services:
       ## Mount the mirrors JSON file in the container
       - ${MIRRORS_FILE:-./mirrors.json}:/project/mirrors.json
       ## Mount a .ssh directory in the container
-      - ${CONTAINER_SSH_DIR:-./containers/ssh}:/root/.ssh
+      - ${CONTAINER_SSH_DIR:-./containers/ssh}:/home/gituser/.ssh
       ## Container repositories dir where repos will be cloned
       - ${HOST_REPOSITORIES_DIR:-git-mirror_repos}:/data/repositories
       ## Path to logs directory in container
