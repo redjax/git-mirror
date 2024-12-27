@@ -1,7 +1,7 @@
 from git_mirror.main import entrypoint
 from loguru import logger as log
 
-if __name__ == "__main__":
+def main():
     try:
         entrypoint(add_file_logger=True, add_error_file_logger=True, colorize=True)
         
@@ -11,3 +11,6 @@ if __name__ == "__main__":
         print(f"[ERROR] {msg}")
         
         exit(1)
+
+if __name__ == "__main__":
+    main()
