@@ -1,5 +1,12 @@
 #!/bin/bash
 
+##
+# You can schedule this script using crontab -e:
+#
+# # Assumes this repository was cloned to ~/git-mirror
+# @reboot . $HOME/.profile; /bin/bash $HOME/git-mirror/scripts/start_sync.sh > /dev/null 2>&1
+##
+
 CWD=$(pwd)
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SLEEP_SECONDS=3600
