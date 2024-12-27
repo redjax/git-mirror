@@ -280,7 +280,10 @@ def main_loop(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", defaul
     sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
     
     log.info(f"Script looping enabled. Sleep time: {sleep_seconds} second(s)")
+    loops: int = 1
+    
     while True:
+        log.debug(f"Loop #{loops}")
         try:
             main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
         except Exception as exc:
@@ -289,13 +292,14 @@ def main_loop(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", defaul
             
             break
 
-        log.info(f"Sleeping for {sleep_seconds} before restarting...")
+        log.info(f"[Loop #{loops}] Sleeping for {sleep_seconds} before restarting...")
 
         ## Get the current time and add the sleep_seconds to it
         next_execution = datetime.datetime.now() + datetime.timedelta(seconds=sleep_seconds)
         log.info(f"Next execution: {next_execution.strftime('%Y-%m-%d %H:%M:%S')}")
         
         time.sleep(sleep_seconds)
+        loops += 1
         
         log.info("Relaunching script")
 
