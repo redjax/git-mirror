@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-git_mirror = "git_mirror.main:main"
+git_mirror = "git_mirror.main:entrypoint"
 
 [build-system]
 requires = ["hatchling"]

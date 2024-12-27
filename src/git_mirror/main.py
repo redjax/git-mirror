@@ -318,7 +318,9 @@ def entrypoint(log_level: str = LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"
     log.debug(f"Repositories directory: {repositories_dir}")
     log.debug(f"Logs directory: {LOGGING_SETTINGS.get('LOG_DIR', default='<unset>')}")
     
-    if APP_SETTINGS.get("LOOP_SCRIPT", default=False) or APP_SETTINGS.get("CONTAINER_ENV", default=False):
+    log.debug(f"Loop script: {APP_SETTINGS.get('APP_LOOP_SCRIPT', default=False)}")
+    
+    if APP_SETTINGS.get("APP_LOOP_SCRIPT", default=False) or APP_SETTINGS.get("CONTAINER_ENV", default=False):
         try:
             main_loop(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
         except GitNotInstalled:

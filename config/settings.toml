@@ -3,18 +3,20 @@
 log_level = "INFO"
 log_dir = "logs"
 
-mirrors_file = "mirrors.json"
-repositories_dir = "repositories"
-loop_script = false
-exec_sleep = 3600
+git_mirrors_file = "mirrors.json"
+git_repositories_dir = "repositories"
+
+app_loop_script = false
+app_exec_sleep = 3600
+
+[app]
+# app_loop_script = true
+# app_exec_sleep = 3600
 
 [logging]
 # log_level = "DEBUG"
 # log_dir = "/var/log/git-mirror"
 
 [git]
-# mirrors_file = "mirrors_other.json"
-# repositories_dir = "/data/repositories"
-
-# loop_script = true
-# exec_sleep = 3600
+# git_mirrors_file = "mirrors_other.json"
+# git_repositories_dir = "/data/repositories"
