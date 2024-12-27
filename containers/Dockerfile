@@ -20,14 +20,6 @@ RUN apt-get update -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-## Create container /data directory
-RUN mkdir -pv /data/logs && \
-    mkdir -pv /data/repositories
-
-## Seed app log files
-RUN touch /data/logs/app.log \
-    && touch /data/logs/error.log
-
 ## Create a non-root user 'gituser' and add to sudo group
 RUN useradd -ms /bin/bash gituser \
     && usermod -aG sudo gituser \
@@ -38,9 +30,9 @@ RUN chown -R gituser:gituser /home/gituser \
     && mkdir -pv /home/gituser/.local /home/gituser/.ssh \
     && chmod -R u+w /home/gituser/.local /home/gituser/.ssh
 
-## Set permissions on data dir
-RUN sudo chown -R gituser:gituser /data \
-    && chmod -R u+w /data
+## Create container /data directory
+RUN mkdir -pv /data/logs \
+    && mkdir -pv /data/repositories
 
 FROM base AS stage
 ## Add astral.sh/uv to container's /bin/ path
@@ -67,13 +59,20 @@ RUN uv sync --all-extras
 FROM stage AS run
 
 COPY --from=stage /home/gituser/.ssh /home/gituser/.ssh
-COPY --from=stage /project /project
 COPY --from=stage /data /data
+COPY --from=stage /project /project
 COPY --from=uv /uv /bin/
 
-USER root
-RUN sudo chown -R gituser:gituser /data \
-    && chmod -R u+w /data
+# USER root
+# RUN sudo chown -R gituser:gituser /data \
+#     && chmod -R u+w /data
 
 USER gituser
+
+# RUN sudo chmod -R u+w /home/gituser/data \
+#     && sudo chown -R gituser:gituser /home/gituser/data
+
+RUN sudo chown -R gituser:gituser /data
+RUN sudo chown -R gituser:gituser /home/gituser/.ssh
+
 CMD ["uv", "run", "src/git_mirror/main.py"]
