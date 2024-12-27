@@ -5,6 +5,8 @@ log_dir = "logs"
 
 mirrors_file = "mirrors.json"
 repositories_dir = "repositories"
+loop_script = false
+exec_sleep = 3600
 
 [logging]
 # log_level = "DEBUG"
@@ -13,3 +15,6 @@ repositories_dir = "repositories"
 [git]
 # mirrors_file = "mirrors_other.json"
 # repositories_dir = "/data/repositories"
+
+# loop_script = true
+# exec_sleep = 3600

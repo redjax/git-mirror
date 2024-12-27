@@ -7,6 +7,8 @@ import subprocess
 import sys
 import threading
 import typing as t
+import datetime
+import time
 
 from git_mirror.core import APP_SETTINGS, GIT_MIRROR_SETTINGS, LOGGING_SETTINGS, setup
 
@@ -123,7 +125,10 @@ def run_command(command, cwd=None, stream=False):
                 log.info(result.stderr)
             return result
     except subprocess.CalledProcessError as e:
-        log.error(f"Error running command: {' '.join(command)}. Details: {e.stderr}")
+        if e.stderr:
+            log.error(f"Error running command: {' '.join(command)}. Details: {e.stderr}")
+        elif e.stdout:
+            log.warning(f"Command ran without exceptions, but returned an exit code other than 0: {' '.join(command)}. Details: {e.stdout}")
         raise
     except Exception as exc:
         msg = f"({type(exc).__name__}) Unhandled exception running command. Details: {exc}"
@@ -197,7 +202,10 @@ def update_mirror(repo_dir: t.Union[str, Path], stream: bool = True):
     try:
         run_command(["git", "push", "--mirror"], cwd=repo_dir, stream=stream)
     except subprocess.CalledProcessError as e:
-        log.error(f"Error pushing changes: {e.stderr}")
+        if e.stderr:
+            log.error(f"Error pushing changes: {e.stderr}")
+        elif e.stdout:
+            log.warning(f"git push --mirror returned a non-zero exit code. Details: {e.stdout}")
         raise
     except Exception as exc:
         msg = f"({type(exc)}) Unhandled exception pushing changes. Details: {exc}"
@@ -266,9 +274,34 @@ def main(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", default="<u
         process_repositories(mirrors, repositories_dir)
     except Exception as e:
         print(f"Failed to process repositories: {e}")
+        
 
-if __name__ == "__main__":
-    setup.setup_logging(log_level=LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger=True, add_error_file_logger=True, colorize=True)
+def main_loop(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", default="<unset>"), repositories_dir: str = GIT_MIRROR_SETTINGS.get("REPOSITORIES_DIR", default="<unset>")):
+    sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
+    
+    log.info(f"Script looping enabled. Sleep time: {sleep_seconds} second(s)")
+    while True:
+        try:
+            main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
+        except Exception as exc:
+            msg = f"({type(exc)}) Error running main loop. Details: {exc}"
+            log.error(msg)
+            
+            break
+
+        log.info(f"Sleeping for {sleep_seconds} before restarting...")
+
+        ## Get the current time and add the sleep_seconds to it
+        next_execution = datetime.datetime.now() + datetime.timedelta(seconds=sleep_seconds)
+        log.info(f"Next execution: {next_execution.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        time.sleep(sleep_seconds)
+        
+        log.info("Relaunching script")
+
+
+def entrypoint(log_level: str = LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger: bool = False, add_error_file_logger: bool = False, colorize: bool = True):
+    setup.setup_logging(log_level=log_level, add_file_logger=add_file_logger, add_error_file_logger=add_error_file_logger, colorize=colorize)
     
     mirrors_file_str: str = APP_SETTINGS.get("MIRRORS_FILE", default="mirrors.json")
     repositories_dir_str: str = APP_SETTINGS.get("REPOSITORIES_DIR", default="repositories")
@@ -285,30 +318,69 @@ if __name__ == "__main__":
     log.debug(f"Repositories directory: {repositories_dir}")
     log.debug(f"Logs directory: {LOGGING_SETTINGS.get('LOG_DIR', default='<unset>')}")
     
+    if APP_SETTINGS.get("LOOP_SCRIPT", default=False) or APP_SETTINGS.get("CONTAINER_ENV", default=False):
+        try:
+            main_loop(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
+        except GitNotInstalled:
+            log.warning(GitNotInstalled())
+            
+            exit(1)
+        except Exception as exc:
+            msg = f"({type(exc)}) Error running script. Details: {exc}"
+            log.error(msg)
+            
+            exit(1)
+    else:
+        try:
+            main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
+        except GitNotInstalled:
+            log.warning(GitNotInstalled())
+            
+            exit(1)
+    
+
+if __name__ == "__main__":
     try:
-        main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
-    except GitNotInstalled:
-        log.warning(GitNotInstalled())
+        entrypoint(add_file_logger=True, add_error_file_logger=True, colorize=True)
+    except Exception as exc:
+        msg = f"({type(exc)}) Error running git-mirror package. Details: {exc}"
+        print(f"[ERROR] {msg}")
         
         exit(1)
 
-    ## Wait for a time between executions when running in a container.
-    if APP_SETTINGS.get("CONTAINER_ENV", default=False):
-        import datetime
-        import time
-
-        sleep_seconds: int = APP_SETTINGS.get('EXEC_SLEEP', default=3600)
-        log.info(f"Detected script is running in a container. Sleeping for {sleep_seconds} before restarting...")
-        
-        ## Get the current time and add the sleep_seconds to it
-        next_execution = datetime.datetime.now() + datetime.timedelta(seconds=sleep_seconds)
-        log.info(f"Next execution: {next_execution.strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        time.sleep(sleep_seconds)
-        
-        log.info("Restarting container...")
-
-
-        exit(0)
-    else:
-        exit(0)
+    # setup.setup_logging(log_level=LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger=True, add_error_file_logger=True, colorize=True)
+    
+    # mirrors_file_str: str = APP_SETTINGS.get("MIRRORS_FILE", default="mirrors.json")
+    # repositories_dir_str: str = APP_SETTINGS.get("REPOSITORIES_DIR", default="repositories")
+    
+    # mirrors_file = Path(mirrors_file_str)
+    # repositories_dir = repositories_dir_str
+    
+    # if not Path(repositories_dir).exists():
+    #     Path(repositories_dir).mkdir(parents=True, exist_ok=True)
+    
+    # log.debug(f"App settings: {APP_SETTINGS.as_dict()}")
+    
+    # log.debug(f"Mirrors file: {mirrors_file}")
+    # log.debug(f"Repositories directory: {repositories_dir}")
+    # log.debug(f"Logs directory: {LOGGING_SETTINGS.get('LOG_DIR', default='<unset>')}")
+    
+    # if APP_SETTINGS.get("LOOP_SCRIPT", default=False) or APP_SETTINGS.get("CONTAINER_ENV", default=False):
+    #     try:
+    #         main_loop(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
+    #     except GitNotInstalled:
+    #         log.warning(GitNotInstalled())
+            
+    #         exit(1)
+    #     except Exception as exc:
+    #         msg = f"({type(exc)}) Error running script. Details: {exc}"
+    #         log.error(msg)
+            
+    #         exit(1)
+    # else:
+    #     try:
+    #         main(mirrors_file=mirrors_file, repositories_dir=repositories_dir)
+    #     except GitNotInstalled:
+    #         log.warning(GitNotInstalled())
+            
+    #         exit(1)
