@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CWD=$(pwd)
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SLEEP_SECONDS=3600
 
 if ! command -v uv &> /dev/null; then
@@ -11,7 +13,13 @@ echo ""
 echo "Starting git mirror synch loop. Sleep for [${SLEEP_SECONDS}] second(s) between loops."
 echo ""
 
+## cd to git root
+cd $THIS_DIR && cd ..
+echo "[DEBUG] Working directory: " $(pwd)
 APP_LOOP_SCRIPT=true uv run git_mirror
+
+## cd back to path where script was called from
+cd $CWD
 
 if [[ $? -ne 0 ]]; then
     echo ""
