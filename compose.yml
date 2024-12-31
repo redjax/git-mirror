@@ -16,8 +16,8 @@ services:
     user: "1000:1000"
     environment:
       TZ: ${TZ:-ETC/UTC}
-      # PUID: ${PUID:-1000}
-      # PGID: ${PGID:-1000}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
       DYNACONF_CONTAINER_ENV: true
       DYNACONF_EXEC_SLEEP: ${GIT_MIRROR_COMMAND_SLEEP:-3600}
       DYNACONF_LOG_LEVEL: ${LOG_LEVEL:-INFO}
