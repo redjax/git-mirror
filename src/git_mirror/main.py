@@ -304,7 +304,7 @@ def main_loop(mirrors_file: str = GIT_MIRROR_SETTINGS.get("MIRRORS_FILE", defaul
         log.info("Relaunching script")
 
 
-def entrypoint(log_level: str = LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger: bool = False, add_error_file_logger: bool = False, colorize: bool = True):
+def entrypoint(log_level: str = LOGGING_SETTINGS.get("LOG_LEVEL", default="INFO"), add_file_logger: bool = True, add_error_file_logger: bool = True, colorize: bool = True):
     setup.setup_logging(log_level=log_level, add_file_logger=add_file_logger, add_error_file_logger=add_error_file_logger, colorize=colorize)
     
     mirrors_file_str: str = APP_SETTINGS.get("MIRRORS_FILE", default="mirrors.json")
